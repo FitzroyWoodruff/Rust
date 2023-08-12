@@ -2,6 +2,10 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 
 
+pub const PLAYER_SIZE: f32 = 64.0;
+pub const PLAYER_SPEED: f32 = 500.0;
+
+
 //our manin function adding the .add_plugin(DefaultPlugins)  creates a default window, we also reference camera and player
 fn main() {
     App::new()
@@ -9,6 +13,7 @@ fn main() {
     .add_startup_system(spawn_camera)
     .add_startup_system(spawn_player)
     .add_system(player_movement)
+    .add_system(confine_player_movement)
     .run();
 }
 
@@ -56,7 +61,6 @@ pub fn spawn_camera(
     );
 }
 
-pub const PLAYER_SPEED: f32 = 500.0;
 
 // add player movements
 pub fn player_movement(
@@ -85,6 +89,40 @@ pub fn player_movement(
         }
 
         transform.translation += direction * PLAYER_SPEED * time.delta_seconds();
+    }
+
+}
+
+pub fn confine_player_movement(
+    mut player_query: Query<&mut Transform, With<Player>>,
+    window_query: Query<&Window, With<PrimaryWindow>>
+) {
+    if let Ok(mut player_transform) = player_query.get_single_mut() {
+        let window = window_query.get_single().unwrap();
+
+        let half_player_size = PLAYER_SIZE / 2.0;
+        let x_min = 0.0 + half_player_size;
+        let x_max = window.width() - half_player_size;
+        let y_min = 0.0 + half_player_size;
+        let y_max = window.height() - half_player_size;
+
+        let mut translation = player_transform.translation;
+
+        //bound the player x position
+        if translation.x < x_min {
+            translation.x = x_min;
+        }else if translation.x > x_max {
+            translation.x = x_max;
+        }
+        
+        //bound the player x position
+        if translation.y < y_min {
+            translation.y = y_min;
+        }else if translation.y > y_max {
+            translation.y = y_max;
+        }
+
+        player_transform.translation = translation;
     }
 
 }

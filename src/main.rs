@@ -1,9 +1,12 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use rand::prelude::*;
 
 
 pub const PLAYER_SIZE: f32 = 64.0;
 pub const PLAYER_SPEED: f32 = 500.0;
+pub const NUMBER_OF_ENEMIES: usize = 4;
+pub const ENEMY_SPEED: f32 = 200.0;
 
 
 //our manin function adding the .add_plugin(DefaultPlugins)  creates a default window, we also reference camera and player
@@ -12,6 +15,7 @@ fn main() {
     .add_plugins(DefaultPlugins)
     .add_startup_system(spawn_camera)
     .add_startup_system(spawn_player)
+    .add_startup_system(spawn_enemies)
     .add_system(player_movement)
     .add_system(confine_player_movement)
     .run();
@@ -21,6 +25,11 @@ fn main() {
 #[derive(Component)]
 pub struct Player {
 
+}
+
+#[derive(Component)]
+pub struct Enemy {
+    pub direction: Vec2
 }
 
 //we create a function to span a player
@@ -44,6 +53,34 @@ pub fn spawn_player(
             Player {}
         )
     );
+}
+//we create a function to spawn a player
+/* NOTE: spawn_enemies takes in a Command, A query for the window, access to asset server */
+pub fn spawn_enemies( 
+    mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    asset_server: Res<AssetServer>,
+) {
+    // we get a single ref to our window so we have some place to place the Player
+    let window: &Window = window_query.get_single().unwrap();
+
+    for _ in 0..NUMBER_OF_ENEMIES {
+        let random_x = random::<f32>() * window.width();
+        let random_y = random::<f32>() * window.height();
+
+        commands.spawn(
+            (
+                SpriteBundle {
+                    transform: Transform::from_xyz(random_x, random_y, 0.0),
+                    texture: asset_server.load("sprites/ball_red_large.png"),
+                    ..default()
+                },
+                Enemy {
+                    direction: Vec2::new(random::<f32>(), random::<f32>()).normalize()
+                }
+            )
+        );
+    }
 }
 
 // we create our camera 
@@ -125,4 +162,13 @@ pub fn confine_player_movement(
         player_transform.translation = translation;
     }
 
+}
+
+pub fn enemy_movement(
+    mut enemy_query: Query<(&mut Transform, &Enemy)>,
+    time: Res<Time>
+){
+    for (mut transform, enemy) in enemy_query.iter_mut(){
+        let direction = Vec3::new(enemy.direction.x, enemy.direction.y, 0.0);
+    }
 }
